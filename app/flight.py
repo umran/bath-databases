@@ -10,7 +10,7 @@ class FlightTable():
     table_def: TableDef
 
     def __init__(self):
-        self.table_def = TableDef("flights", [
+        self.table_def = TableDef("flight", [
             ColumnDef("id", DataType.Int),
             ColumnDef("flight_number", DataType.Text),
             ColumnDef("date", DataType.Date),
@@ -51,7 +51,7 @@ class FlightTable():
         values.append(maybe_destination["id"])
 
         statement = f"""
-            INSERT INTO flights 
+            INSERT INTO {self.table_def.name} 
             (flight_number, date, status, departure_time, arrival_time, origin_id, destination_id)
             VALUES
             (?, ?, ?, ?, ?, ?, ?) 
@@ -62,8 +62,11 @@ class FlightTable():
 
     def update_record(self, conn: sqlite3.Connection):
         # first, select a record to update
-        print("Select flight to update:")
+        print("Select a flight to update: ")
         record = self.table_def.select_record_from_db(conn.cursor())
+
+        if record is None:
+            return
 
         updateable_columns = [col for col in self.table_def.columns if col.name not in ["id"]]
 
@@ -74,31 +77,46 @@ class FlightTable():
         for column in updateable_columns:
             if binary_decision(f"would you like to update {column.name}? "):
                 if column.name in ["origin_id", "destination_id"]:
+                    print(f"Please find an airport to set as the new {column.name}")
                     val = airport_table.table_def.select_record_from_db(conn.cursor())
                     if val is None:
                         continue
                     else:
-                        record[column.name] = val
+                        record[column.name] = val["id"]
                 else:
-                    val = self.table_def.get_value(f"Please enter the new value for {column.name}")
+                    val = self.table_def.get_value(column, f"Please enter the new value for {column.name}: ")
                     record[column.name] = val
-            print("the flight will be updated to reflect the following values:")
-            for key in record.keys():
-                print(f"    {key}:      {record[key].to_str()}")
-            if binary_decision("would you like to proceed with these changes?"):
-                update_set = [f"{column.name} = ?" for column in updateable_columns]
-                update_values = [record[column.name].inner for column in updateable_columns]
+            
+        print("the flight will be updated to reflect the following values:")
+        for key in record.keys():
+            value = record.get(key)
+            value_str = ""
+            if value is None:
+                value_str = "NULL"
+            else:
+                value_str = value.to_str()
 
-                
+            print(f"    {key}: {value_str}")
+        
+        if binary_decision("would you like to proceed with these changes?"):
+            update_set = [f"{column.name} = ?" for column in updateable_columns]
+            values = [record[column.name].inner for column in updateable_columns]
 
+            if len(update_set) > 0:
+                statement = f"""
+                    UPDATE {self.table_def.name} SET {", ".join(update_set)} WHERE id = ?
+                """
 
-    def select_record(self, cursor: sqlite3.Cursor):
-        record = self.table_def.select_record_from_db(cursor)
-        print(record)
+                # debugging
+                print(statement)
+
+                values.append(record["id"].inner)
+                conn.execute(statement, values)
+                conn.commit()
 
     def create_table(self, conn: sqlite3.Connection):
         statement = """
-            CREATE TABLE IF NOT EXISTS flights (
+            CREATE TABLE IF NOT EXISTS flight (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 flight_number TEXT NOT NULL,
                 date DATE NOT NULL,
@@ -107,8 +125,8 @@ class FlightTable():
                 arrival_time DATETIME NOT NULL,
                 origin_id INTEGER NOT NULL,
                 destination_id INTEGER NOT NULL,
-                FOREIGN KEY (origin_id) REFERENCES airports(id),
-                FOREIGN KEY (destination_id) REFERENCES airports(id),
+                FOREIGN KEY (origin_id) REFERENCES airport(id),
+                FOREIGN KEY (destination_id) REFERENCES airport(id),
                 UNIQUE (flight_number, date)
             )
         """
@@ -141,7 +159,8 @@ def test():
     flight_table.create_table(conn)
 
     flight_table.create_record(conn)
+    # flight_table.update_record(conn)
 
     # flight_table.select_record(conn.cursor())
 
-test()
+# test()

@@ -90,10 +90,6 @@ class ColumnDef:
                 
                 if inner is None:
                     raise ValueError(f"parsing date failed for column with name: {self.name}")
-                # try:
-                #     inner = datetime.strptime(val, "%Y-%m-%d")
-                # except ValueError:
-                #     raise ValueError(f"parsing date failed for column with name: {self.name}")
             case DataType.DateTime:
                 try:
                     inner = datetime.strptime(val, "%Y-%m-%d %H:%M:%S")
@@ -170,11 +166,14 @@ class TableDef:
 
         return parsed_row
 
-    def get_column(self) -> ColumnDef:
+    def get_column(self, msg: Optional[str] = None) -> ColumnDef:
         clear_stdout()
+
+        if msg is None:
+            msg = "Please select a column to apply the condition to: "
         
         while True:
-            print("Select a column")
+            print(msg)
             
             for idx, col in enumerate(self.columns):
                 print(f"    {idx + 1}. {col.name}")
@@ -187,7 +186,7 @@ class TableDef:
         clear_stdout()
 
         while True:
-            print(f"Select an operator for {column.name}")
+            print(f"Select an operator to compare against {column.name}")
             
             op_names = SelectOperator._member_names_
             for idx, name in enumerate(op_names):
@@ -230,7 +229,7 @@ class TableDef:
                 continue
     
     def get_select_conditions_optional(self) -> List[SelectCondition]:
-        if binary_decision("Would you like to specify some search criteria?"):
+        if binary_decision("Would you like to specify some filters to narrow down your search?"):
             return self.get_select_conditions()
         return []
     
@@ -239,9 +238,9 @@ class TableDef:
         conditions: List[SelectCondition] = []
         
         while True:
-            column = self.get_column()
+            column = self.get_column("Please select a column to apply the condition to: ")
             operator = self.get_operator(column)
-            value = self.get_value(column)
+            value = self.get_value(column, f"Please enter a value to compare against {column.name}: ")
 
             clear_stdout()
 
@@ -290,8 +289,6 @@ class TableDef:
             where_clause = " AND ".join(prepared_conditions)
             statement = f"{statement} WHERE {where_clause}"
 
-        print(statement)
-
         results = cursor.execute(statement, condition_values).fetchall()
 
         return self.read_rows(results)
@@ -300,15 +297,15 @@ class TableDef:
         while True:
             records = self.find_records_from_db(cursor)
 
-            clear_stdout()
+            # clear_stdout()
             print(f"Your query yielded {len(records)} records")
             for idx, record in enumerate(records):
                 display_row = ",    ".join([record[key].to_str() for key in record.keys()])
-                print(f"    {idx + 1}. {display_row}")
+                print(f"    ({idx + 1}). {display_row}")
             
-            print(f"    0. Abort")
+            print(f"\n    (0). Enter 0 to abort")
 
-            maybe_idx = select_int_in_range_with_abort("Please select a record: ", 1, len(records))
+            maybe_idx = select_int_in_range_with_abort(f"Please select a {self.name}: ", 1, len(records))
             if maybe_idx is None:
                 return None
 
