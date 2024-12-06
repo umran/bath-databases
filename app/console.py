@@ -53,13 +53,17 @@ class Console:
         options = [
             ("Add New Airport", self.airport_table.create_record),
             ("Update Existing Airport", self.airport_table.update_record),
+            ("List Existing Airports", self.airport_table.list_records),
             ("Add New Pilot", self.pilot_table.create_record),
             ("Update Existing Pilot", self.pilot_table.update_record),
+            ("List Existing Pilots", self.pilot_table.list_records),
             ("Add New Flight", self.flight_table.create_record),
             ("Update Existing Flight", self.flight_table.update_record),
+            ("List Existing Flights", self.flight_table.list_records),
             ("Assign Pilot to Flight", self.flight_pilot_table.assign_pilot_to_flight),
             ("Unassign Pilot from Flight", self.flight_pilot_table.unassign_pilot_from_flight),
-            ("List Assigned Pilots for Flight", flight_pilot_assignments),
+            ("List Assigned Pilots for a Particular Flight", flight_pilot_assignments),
+            ("List Pilots not Assigned to any Flight", unassigned_pilots),
             ("Show Pilot Schedule", pilot_schedule),
             ("List Frequency of Pilot Destinations", pilot_destination_frequencies),
         ]

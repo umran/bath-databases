@@ -91,21 +91,3 @@ class AirportTable():
 
         conn.execute(statement)
         conn.commit()
-
-def test():
-    conn = sqlite3.connect("airline.db")
-
-    # use sqlite3.Row as row_factory to be able to access columns by name
-    conn.row_factory = sqlite3.Row
-
-    # enable foreign key support explicitly so that we can enforce foreign key constraints
-    conn.execute("PRAGMA foreign_keys = ON")
-
-    airport_table = AirportTable()
-    airport_table.create_table(conn)
-
-    airport_table.create_record(conn)
-
-    # airport_table.select_record(conn.cursor())
-
-# test()

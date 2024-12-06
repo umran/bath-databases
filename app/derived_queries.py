@@ -1,5 +1,3 @@
-from datetime import datetime
-
 import sqlite3
 
 # local imports
@@ -158,29 +156,3 @@ def pilot_destination_frequencies(conn: sqlite3.Connection):
 
     results = table.find_records(conn.cursor(), statement, [])
     table.display_records(results)
-
-
-# Define adapter for datetime -> string
-def adapt_datetime(dt: datetime) -> str:
-    return dt.strftime("%Y-%m-%d %H:%M:%S")
-
-# Define converter for string -> datetime
-def convert_datetime(s: bytes) -> datetime:
-    return datetime.strptime(s.decode("utf-8"), "%Y-%m-%d %H:%M:%S")
-
-def test():
-    # Register the datetime adapter and converter to suppress the deprecation warning
-    sqlite3.register_adapter(datetime, adapt_datetime)
-    sqlite3.register_converter("DATETIME", convert_datetime)
-
-    with sqlite3.connect("airline.db") as conn:
-        # use sqlite3.Row as row_factory to be able to access columns by name
-        conn.row_factory = sqlite3.Row
-        # enable foreign key support explicitly so that we can enforce foreign key constraints
-        conn.execute("PRAGMA foreign_keys = ON")
-
-        # pilot_destination_frequencies(conn)
-        # unassigned_pilots(conn)
-
-        # flight_pilot_assignments(conn)
-        pilot_schedule(conn)

@@ -116,21 +116,3 @@ class PilotTable():
 
         conn.execute(statement)
         conn.commit()
-
-def test():
-    conn = sqlite3.connect("airline.db")
-
-    # use sqlite3.Row as row_factory to be able to access columns by name
-    conn.row_factory = sqlite3.Row
-
-    # enable foreign key support explicitly so that we can enforce foreign key constraints
-    conn.execute("PRAGMA foreign_keys = ON")
-
-    pilot_table = PilotTable()
-    pilot_table.create_table(conn)
-
-    pilot_table.update_record(conn)
-
-    # pilot_table.select_record(conn.cursor())
-
-# test()

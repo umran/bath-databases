@@ -1,4 +1,5 @@
 import sqlite3
+
 from typing import List, Any, Callable, Optional
 from enum import Enum
 from datetime import datetime
@@ -331,16 +332,3 @@ class TableDef:
             values = [record[key].to_str() for key in record.keys()]
             display_row = ",    ".join(values)
             print(f"    ({idx + 1}). {display_row}")
-
-def test():
-    table = TableDef("flight", [
-        ColumnDef("number", DataType.Text),
-        ColumnDef("status", DataType.Text, allowed_values=[Value.new_text("scheduled"), Value.new_text("delayed"), Value.new_text("boarding"), Value.new_text("departed"), Value.new_text("arrived")]),
-        ColumnDef("date", DataType.Date),
-        ColumnDef("scheduled_departure", DataType.DateTime),
-        ColumnDef("scheduled_arrival", DataType.DateTime),
-    ])
-
-    table.get_column_values(lambda col: col.name != "number")
-
-    # table.get_select_conditions()
