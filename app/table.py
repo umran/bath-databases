@@ -21,6 +21,9 @@ class Value:
         self.inner = inner
     
     def to_str(self) -> str:
+        if self.inner is None:
+            return "NULL"
+        
         match self.type:
             case DataType.Text:
                 return self.inner
@@ -65,7 +68,7 @@ class ColumnDef:
 
         # only allow null value if column is nullable
         if self.nullable and val is None:
-            return Value(self.type, inner)
+            return Value(self.type, None)
         elif val is None:
             raise ValueError(f"received null value for non-nullable column with name: {self.name}")
 
@@ -95,7 +98,7 @@ class ColumnDef:
                     inner = datetime.strptime(val, "%Y-%m-%d %H:%M:%S")
                 except ValueError:
                     raise ValueError(f"parsing datetime failed for column with name: {self.name}")
-        
+
         return Value(self.type, inner)
 
 class SelectOperator(Enum):
@@ -272,7 +275,7 @@ class TableDef:
         
         return values
     
-    # this is a generic method that can be used to retrieve records from all natural tables that already
+    # this is a method that can be used to retrieve records from all natural tables that already
     # exist on the database, provided that the column definitions are mapped correctly
     def find_records_with_conditions(self, cursor: sqlite3.Cursor, conditions: List[SelectCondition] | None = None) -> List[dict[str, Value]]:
         if conditions is None:
@@ -297,7 +300,12 @@ class TableDef:
         # return self.parse_rows(results)
         return self.find_records(cursor, statement, condition_values)
 
+    # this is a more generic method that expects a prepared statement to be supplied as an argument explicitly.
+    # The shape of the results returned by the statement must exactly map onto the columns defined here
     def find_records(self, cursor: sqlite3.Cursor, statement, variable_bindings: List[Any] | None = None) -> List[dict[str, Value]]:
+        if variable_bindings is None:
+            variable_bindings = []
+        
         results = cursor.execute(statement, variable_bindings).fetchall()
         return self.parse_rows(results)
         
@@ -305,13 +313,6 @@ class TableDef:
     def select_record(self, cursor: sqlite3.Cursor, conditions: List[SelectCondition] | None = None) -> Optional[dict[str, Value]]:
         while True:
             records = self.find_records_with_conditions(cursor, conditions)
-
-            # print(f"Your query yielded {len(records)} records")
-            # header = ",    ".join([column.name for column in self.columns])
-            # print(f"        {header}")
-            # for idx, record in enumerate(records):
-            #     display_row = ",    ".join([record[key].to_str() for key in record.keys()])
-            #     print(f"    ({idx + 1}). {display_row}")
             self.display_records(records)
             
             print(f"\n    (0). Enter 0 to abort")
@@ -327,7 +328,8 @@ class TableDef:
         header = ",    ".join([column.name for column in self.columns])
         print(f"        {header}")
         for idx, record in enumerate(records):
-            display_row = ",    ".join([record[key].to_str() for key in record.keys()])
+            values = [record[key].to_str() for key in record.keys()]
+            display_row = ",    ".join(values)
             print(f"    ({idx + 1}). {display_row}")
 
 def test():

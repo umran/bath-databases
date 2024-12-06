@@ -74,7 +74,10 @@ class AirportTable():
                 conn.commit()
 
                 print("existing airport updated successfully")
-        
+
+    def list_records(self, conn: sqlite3.Connection):
+        records = self.table_def.find_records_with_conditions(conn.cursor())
+        self.table_def.display_records(records)
 
     def create_table(self, conn: sqlite3.Connection):
         statement = """

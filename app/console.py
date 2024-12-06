@@ -8,6 +8,7 @@ from .airport import AirportTable
 from .pilot import PilotTable
 from .flight import FlightTable
 from .flight_pilot import FlightPilotTable
+from .derived_queries import flight_pilot_assignments, pilot_destination_frequencies, pilot_schedule, unassigned_pilots
 
 class Console:
     airport_table: AirportTable
@@ -57,7 +58,10 @@ class Console:
             ("Add New Flight", self.flight_table.create_record),
             ("Update Existing Flight", self.flight_table.update_record),
             ("Assign Pilot to Flight", self.flight_pilot_table.assign_pilot_to_flight),
-            ("Unassign Pilot from Flight", self.flight_pilot_table.unassign_pilot_from_flight)
+            ("Unassign Pilot from Flight", self.flight_pilot_table.unassign_pilot_from_flight),
+            ("List Assigned Pilots for Flight", flight_pilot_assignments),
+            ("Show Pilot Schedule", pilot_schedule),
+            ("List Frequency of Pilot Destinations", pilot_destination_frequencies),
         ]
 
         print("Please select an option from the list below")
