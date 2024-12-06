@@ -38,12 +38,12 @@ class FlightTable():
         airport_table = AirportTable()
 
         print("Please take a moment to select the flight origin")
-        maybe_origin = airport_table.table_def.select_natural_record(conn.cursor())
+        maybe_origin = airport_table.table_def.select_record(conn.cursor())
         if maybe_origin is None:
             return
         
         print("Please take a moment to select the flight destination")
-        maybe_destination = airport_table.table_def.select_natural_record(conn.cursor())
+        maybe_destination = airport_table.table_def.select_record(conn.cursor())
         if maybe_destination is None:
             return
 
@@ -65,7 +65,7 @@ class FlightTable():
     def update_record(self, conn: sqlite3.Connection):
         # first, select a record to update
         print("Select a flight to update: ")
-        record = self.table_def.select_natural_record(conn.cursor())
+        record = self.table_def.select_record(conn.cursor())
 
         if record is None:
             return
@@ -80,7 +80,7 @@ class FlightTable():
             if binary_decision(f"would you like to update {column.name}? "):
                 if column.name in ["origin_id", "destination_id"]:
                     print(f"Please find an airport to set as the new {column.name}")
-                    val = airport_table.table_def.select_natural_record(conn.cursor())
+                    val = airport_table.table_def.select_record(conn.cursor())
                     if val is None:
                         continue
                     else:
@@ -165,6 +165,6 @@ def test():
     flight_table.create_record(conn)
     # flight_table.update_record(conn)
 
-    # flight_table.select_natural_record(conn.cursor())
+    # flight_table.select_record(conn.cursor())
 
 # test()

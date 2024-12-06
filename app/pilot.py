@@ -25,7 +25,7 @@ class PilotTable():
         values = self.table_def.get_column_values(lambda col: col.name not in ["id", "home_airport_id"])
 
         print("Please take a moment to select the home airport")
-        maybe_home_airport = airport_table.table_def.select_natural_record(conn.cursor())
+        maybe_home_airport = airport_table.table_def.select_record(conn.cursor())
         if maybe_home_airport is None:
             return
 
@@ -46,7 +46,7 @@ class PilotTable():
     def update_record(self, conn: sqlite3.Connection):
         # first, select a record to update
         print("Select a pilot to update: ")
-        record = self.table_def.select_natural_record(conn.cursor())
+        record = self.table_def.select_record(conn.cursor())
 
         if record is None:
             return
@@ -61,7 +61,7 @@ class PilotTable():
             if binary_decision(f"would you like to update {column.name}? "):
                 if column.name == "home_airport_id":
                     print(f"Please find an airport to set as the new {column.name}")
-                    val = airport_table.table_def.select_natural_record(conn.cursor())
+                    val = airport_table.table_def.select_record(conn.cursor())
                     if val is None:
                         continue
                     else:
@@ -128,6 +128,6 @@ def test():
 
     pilot_table.update_record(conn)
 
-    # pilot_table.select_natural_record(conn.cursor())
+    # pilot_table.select_record(conn.cursor())
 
 # test()

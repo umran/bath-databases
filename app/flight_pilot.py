@@ -39,13 +39,13 @@ class FlightPilotTable():
         pilot_table = PilotTable()
         
         print("Please select a flight: ")
-        maybe_flight = flight_table.table_def.select_natural_record(conn.cursor())
+        maybe_flight = flight_table.table_def.select_record(conn.cursor())
 
         if maybe_flight is None:
             return
 
         print("Please select a pilot: ")
-        maybe_pilot = pilot_table.table_def.select_natural_record(conn.cursor())
+        maybe_pilot = pilot_table.table_def.select_record(conn.cursor())
 
         if maybe_pilot is None:
             return
@@ -58,13 +58,13 @@ class FlightPilotTable():
         pilot_table = PilotTable()
         
         print("Please select a flight: ")
-        maybe_flight = flight_table.table_def.select_natural_record(conn.cursor())
+        maybe_flight = flight_table.table_def.select_record(conn.cursor())
 
         if maybe_flight is None:
             return
 
         print("Please select a pilot: ")
-        maybe_pilot = pilot_table.table_def.select_natural_record(conn.cursor())
+        maybe_pilot = pilot_table.table_def.select_record(conn.cursor())
 
         if maybe_pilot is None:
             return
@@ -100,6 +100,6 @@ def test():
 
     flight_pilot_table.update_record(conn)
 
-    # flight_pilot_table.select_natural_record(conn.cursor())
+    # flight_pilot_table.select_record(conn.cursor())
 
 # test()

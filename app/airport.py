@@ -34,7 +34,7 @@ class AirportTable():
     def update_record(self, conn: sqlite3.Connection):
         # first, select a record to update
         print("Select an airport to update: ")
-        record = self.table_def.select_natural_record(conn.cursor())
+        record = self.table_def.select_record(conn.cursor())
 
         if record is None:
             return
@@ -103,6 +103,6 @@ def test():
 
     airport_table.create_record(conn)
 
-    # airport_table.select_natural_record(conn.cursor())
+    # airport_table.select_record(conn.cursor())
 
 # test()

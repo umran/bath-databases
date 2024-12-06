@@ -274,7 +274,7 @@ class TableDef:
     
     # this is a generic method that can be used to retrieve records from all natural tables that already
     # exist on the database, provided that the column definitions are mapped correctly
-    def find_natural_records(self, cursor: sqlite3.Cursor, conditions: List[SelectCondition] | None = None) -> List[dict[str, Value]]:
+    def find_records_with_conditions(self, cursor: sqlite3.Cursor, conditions: List[SelectCondition] | None = None) -> List[dict[str, Value]]:
         if conditions is None:
             conditions = []
 
@@ -292,41 +292,27 @@ class TableDef:
             where_clause = " AND ".join(prepared_conditions)
             statement = f"{statement} WHERE {where_clause}"
 
-        results = cursor.execute(statement, condition_values).fetchall()
+        # results = cursor.execute(statement, condition_values).fetchall()
 
+        # return self.parse_rows(results)
+        return self.find_records(cursor, statement, condition_values)
+
+    def find_records(self, cursor: sqlite3.Cursor, statement, variable_bindings: List[Any] | None = None) -> List[dict[str, Value]]:
+        results = cursor.execute(statement, variable_bindings).fetchall()
         return self.parse_rows(results)
-    
-    # this is a method that allows a user to filter records generated via joins and aggregations (as opposed to natural tables),
-    # provided that the column definitions are mapped correctly.
-    def find_derived_records(self, cursor: sqlite3.Cursor, statement: str, conditions: List[SelectCondition] | None = None) -> List[dict[str, Value]]:
-        if conditions is None:
-            conditions = []
+        
 
-        user_supplied_conditions = self.get_select_conditions_optional()
-        conditions.extend(user_supplied_conditions)
-
-        prepared_conditions = [condition.to_prepared_statement() for condition in conditions]
-        condition_values = [condition.value.inner for condition in conditions]
-
-        if len(prepared_conditions) > 0:
-            where_clause = " AND ".join(prepared_conditions)
-            statement = f"{statement} WHERE {where_clause}"
-
-        results = cursor.execute(statement, condition_values).fetchall()
-
-        return self.parse_rows(results)
-
-    def select_natural_record(self, cursor: sqlite3.Cursor, conditions: List[SelectCondition] | None = None) -> Optional[dict[str, Value]]:
+    def select_record(self, cursor: sqlite3.Cursor, conditions: List[SelectCondition] | None = None) -> Optional[dict[str, Value]]:
         while True:
-            records = self.find_natural_records(cursor, conditions)
+            records = self.find_records_with_conditions(cursor, conditions)
 
-            # clear_stdout()
-            print(f"Your query yielded {len(records)} records")
-            header = ",    ".join([column.name for column in self.columns])
-            print(f"        {header}")
-            for idx, record in enumerate(records):
-                display_row = ",    ".join([record[key].to_str() for key in record.keys()])
-                print(f"    ({idx + 1}). {display_row}")
+            # print(f"Your query yielded {len(records)} records")
+            # header = ",    ".join([column.name for column in self.columns])
+            # print(f"        {header}")
+            # for idx, record in enumerate(records):
+            #     display_row = ",    ".join([record[key].to_str() for key in record.keys()])
+            #     print(f"    ({idx + 1}). {display_row}")
+            self.display_records(records)
             
             print(f"\n    (0). Enter 0 to abort")
 
@@ -336,25 +322,13 @@ class TableDef:
 
             return records[maybe_idx - 1]
     
-    def select_derived_record(self, cursor: sqlite3.Cursor, statement: str, conditions: List[SelectCondition] | None = None) -> Optional[dict[str, Value]]:
-        while True:
-            records = self.find_derived_records(cursor, statement, conditions)
-
-            # clear_stdout()
-            print(f"Your query yielded {len(records)} records")
-            header = ",    ".join([column.name for column in self.columns])
-            print(f"        {header}")
-            for idx, record in enumerate(records):
-                display_row = ",    ".join([record[key].to_str() for key in record.keys()])
-                print(f"    ({idx + 1}). {display_row}")
-            
-            print(f"\n    (0). Enter 0 to abort")
-
-            maybe_idx = select_int_in_range_with_abort(f"Please select a {self.name}: ", 1, len(records))
-            if maybe_idx is None:
-                return None
-
-            return records[maybe_idx - 1]
+    def display_records(self, records: List[dict[str, Value]]):
+        print(f"Your query yielded {len(records)} records")
+        header = ",    ".join([column.name for column in self.columns])
+        print(f"        {header}")
+        for idx, record in enumerate(records):
+            display_row = ",    ".join([record[key].to_str() for key in record.keys()])
+            print(f"    ({idx + 1}). {display_row}")
 
 def test():
     table = TableDef("flight", [
