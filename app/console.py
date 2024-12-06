@@ -3,13 +3,13 @@ from datetime import datetime
 import sqlite3
 
 # local imports
+from .util import select_int_in_range, do_more, clear_stdout
 from .airport import AirportTable
 from .pilot import PilotTable
 from .flight import FlightTable
 from .flight_pilot import FlightPilotTable
 
 class Console:
-    conn: sqlite3.Connection
     airport_table: AirportTable
     pilot_table: PilotTable
     flight_table: FlightTable
@@ -20,48 +20,65 @@ class Console:
         sqlite3.register_adapter(datetime, adapt_datetime)
         sqlite3.register_converter("DATETIME", convert_datetime)
 
-        conn = sqlite3.connect("airline.db")
-
-        # use sqlite3.Row as row_factory to be able to access columns by name
-        conn.row_factory = sqlite3.Row
-
-        # enable foreign key support explicitly so that we can enforce foreign key constraints
-        conn.execute("PRAGMA foreign_keys = ON")
-
-        self.conn = conn
         self.airport_table = AirportTable()
         self.pilot_table = PilotTable()
         self.flight_table = FlightTable()
         self.flight_pilot_table = FlightPilotTable()
 
-    def run():
-        while True:
-            pass
+    def run(self):
+        with sqlite3.connect("airline.db") as conn:
+            # use sqlite3.Row as row_factory to be able to access columns by name
+            conn.row_factory = sqlite3.Row
+            # enable foreign key support explicitly so that we can enforce foreign key constraints
+            conn.execute("PRAGMA foreign_keys = ON")
+            
+            self.migrate(conn)
+            
+            while True:
+                try:
+                    self.select_option(conn)
+                except sqlite3.IntegrityError:
+                    print("An invalid update was prevented from violating a primary key or unique key constraint")
+                except Exception as e:
+                    print("An unrecoverable error occurred. this is most likely due to a bug in the code. My sincere apologies :(")
+                    raise e
+                
+                if do_more() is False:
+                    return
 
-    def menu(self):
+    def select_option(self, conn: sqlite3.Connection):
+        clear_stdout()
+        
         options = [
-            ("Create Airport", self.airport_table.create_record),
-            ("Update Airport", self.airport_table.update_record),
-            ("Create Pilot", self.pilot_table.create_record),
-            ("Update Pilot", self.pilot_table.update_record),
-            ("Create Flight", self.flight_table.create_record),
-            ("Update Flight", self.flight_table.update_record),
-            ("Assign Pilot to Flight", 0)
+            ("Add New Airport", self.airport_table.create_record),
+            ("Update Existing Airport", self.airport_table.update_record),
+            ("Add New Pilot", self.pilot_table.create_record),
+            ("Update Existing Pilot", self.pilot_table.update_record),
+            ("Add New Flight", self.flight_table.create_record),
+            ("Update Existing Flight", self.flight_table.update_record),
+            ("Assign Pilot to Flight", self.flight_pilot_table.assign_pilot_to_flight),
+            ("Unassign Pilot from Flight", self.flight_pilot_table.unassign_pilot_from_flight)
         ]
-    
-    def assign_pilot_to_flight(self):
-        maybe_pilot_id = self.pilot_table.table_def.select_record_from_db(self.conn.cursor())
 
-        if maybe_pilot_id is None:
-            return
+        print("Please select an option from the list below")
         
-        maybe_flight_id = self.pilot_table.table_def.select_record_from_db(self.conn.cursor())
+        for idx, (name, _) in enumerate(options):
+            print(f"    ({idx + 1}). {name}")
+            
+        # this should result in an idx within the correct bounds
+        selected_idx = select_int_in_range("Please enter an option number: ", 1, len(options)) - 1
+        
+        _, endpoint = options[selected_idx]
 
-        if maybe_flight_id is None:
-            return
-        
-        self.flight_pilot_table.create_record(maybe_flight_id["id"], maybe_pilot_id["id"])
-        
+        endpoint(conn)
+
+    def migrate(self, conn: sqlite3.Connection):
+        self.airport_table.create_table(conn)
+        self.pilot_table.create_table(conn)
+        self.flight_table.create_table(conn)
+        self.flight_pilot_table.create_table(conn)
+            
+            
 
 # Define adapter for datetime -> string
 def adapt_datetime(dt: datetime) -> str:
@@ -70,3 +87,8 @@ def adapt_datetime(dt: datetime) -> str:
 # Define converter for string -> datetime
 def convert_datetime(s: bytes) -> datetime:
     return datetime.strptime(s.decode("utf-8"), "%Y-%m-%d %H:%M:%S")
+
+def test():
+    Console().run()
+
+test()

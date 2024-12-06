@@ -29,10 +29,12 @@ class AirportTable():
         conn.execute(statement, [value.inner for value in values])
         conn.commit()
 
+        print("new airport created successfully")
+
     def update_record(self, conn: sqlite3.Connection):
         # first, select a record to update
         print("Select an airport to update: ")
-        record = self.table_def.select_record_from_db(conn.cursor())
+        record = self.table_def.select_natural_record(conn.cursor())
 
         if record is None:
             return
@@ -70,6 +72,8 @@ class AirportTable():
                 values.append(record["id"].inner)
                 conn.execute(statement, values)
                 conn.commit()
+
+                print("existing airport updated successfully")
         
 
     def create_table(self, conn: sqlite3.Connection):
@@ -99,6 +103,6 @@ def test():
 
     airport_table.create_record(conn)
 
-    # airport_table.select_record(conn.cursor())
+    # airport_table.select_natural_record(conn.cursor())
 
 # test()

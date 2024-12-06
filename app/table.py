@@ -148,10 +148,10 @@ class TableDef:
         self.name = name
         self.columns = columns
 
-    def read_rows(self, rows: List[sqlite3.Row]) -> List[dict[str, Value]]:
-        return [self.read_row(row) for row in rows]
+    def parse_rows(self, rows: List[sqlite3.Row]) -> List[dict[str, Value]]:
+        return [self.parse_row(row) for row in rows]
 
-    def read_row(self, row: sqlite3.Row) -> dict[str, Value]:
+    def parse_row(self, row: sqlite3.Row) -> dict[str, Value]:
         parsed_row: dict[str, Value] = {}
 
         for col_def in self.columns:
@@ -176,7 +176,7 @@ class TableDef:
             print(msg)
             
             for idx, col in enumerate(self.columns):
-                print(f"    {idx + 1}. {col.name}")
+                print(f"    ({idx + 1}). {col.name}")
             
             # this should result in an idx within the correct bounds
             selected_idx = select_int_in_range("Please enter column number: ", 1, len(self.columns)) - 1
@@ -190,7 +190,7 @@ class TableDef:
             
             op_names = SelectOperator._member_names_
             for idx, name in enumerate(op_names):
-                print(f"    {idx + 1}. {name}")
+                print(f"    ({idx + 1}). {name}")
 
             # this should result in an idx within the correct bounds
             selected_idx = select_int_in_range("Please select an operator: ", 1, len(op_names)) - 1
@@ -272,15 +272,38 @@ class TableDef:
         
         return values
     
-    # this is a generic method that can be used to retrieve records from an equivalent table that
-    # exists on the database
-    def find_records_from_db(self, cursor: sqlite3.Cursor) -> List[dict[str, Value]]:
+    # this is a generic method that can be used to retrieve records from all natural tables that already
+    # exist on the database, provided that the column definitions are mapped correctly
+    def find_natural_records(self, cursor: sqlite3.Cursor, conditions: List[SelectCondition] | None = None) -> List[dict[str, Value]]:
+        if conditions is None:
+            conditions = []
+
+        user_supplied_conditions = self.get_select_conditions_optional()
+        conditions.extend(user_supplied_conditions)
+
+        prepared_conditions = [condition.to_prepared_statement() for condition in conditions]
+        condition_values = [condition.value.inner for condition in conditions]
+
         statement = f"""
             SELECT * FROM {self.name}
         """
 
+        if len(prepared_conditions) > 0:
+            where_clause = " AND ".join(prepared_conditions)
+            statement = f"{statement} WHERE {where_clause}"
 
-        conditions = self.get_select_conditions_optional()
+        results = cursor.execute(statement, condition_values).fetchall()
+
+        return self.parse_rows(results)
+    
+    # this is a method that allows a user to filter records generated via joins and aggregations (as opposed to natural tables),
+    # provided that the column definitions are mapped correctly.
+    def find_derived_records(self, cursor: sqlite3.Cursor, statement: str, conditions: List[SelectCondition] | None = None) -> List[dict[str, Value]]:
+        if conditions is None:
+            conditions = []
+
+        user_supplied_conditions = self.get_select_conditions_optional()
+        conditions.extend(user_supplied_conditions)
 
         prepared_conditions = [condition.to_prepared_statement() for condition in conditions]
         condition_values = [condition.value.inner for condition in conditions]
@@ -291,14 +314,16 @@ class TableDef:
 
         results = cursor.execute(statement, condition_values).fetchall()
 
-        return self.read_rows(results)
+        return self.parse_rows(results)
 
-    def select_record_from_db(self, cursor: sqlite3.Cursor) -> Optional[dict[str, Value]]:
+    def select_natural_record(self, cursor: sqlite3.Cursor, conditions: List[SelectCondition] | None = None) -> Optional[dict[str, Value]]:
         while True:
-            records = self.find_records_from_db(cursor)
+            records = self.find_natural_records(cursor, conditions)
 
             # clear_stdout()
             print(f"Your query yielded {len(records)} records")
+            header = ",    ".join([column.name for column in self.columns])
+            print(f"        {header}")
             for idx, record in enumerate(records):
                 display_row = ",    ".join([record[key].to_str() for key in record.keys()])
                 print(f"    ({idx + 1}). {display_row}")
@@ -310,8 +335,26 @@ class TableDef:
                 return None
 
             return records[maybe_idx - 1]
+    
+    def select_derived_record(self, cursor: sqlite3.Cursor, statement: str, conditions: List[SelectCondition] | None = None) -> Optional[dict[str, Value]]:
+        while True:
+            records = self.find_derived_records(cursor, statement, conditions)
 
+            # clear_stdout()
+            print(f"Your query yielded {len(records)} records")
+            header = ",    ".join([column.name for column in self.columns])
+            print(f"        {header}")
+            for idx, record in enumerate(records):
+                display_row = ",    ".join([record[key].to_str() for key in record.keys()])
+                print(f"    ({idx + 1}). {display_row}")
             
+            print(f"\n    (0). Enter 0 to abort")
+
+            maybe_idx = select_int_in_range_with_abort(f"Please select a {self.name}: ", 1, len(records))
+            if maybe_idx is None:
+                return None
+
+            return records[maybe_idx - 1]
 
 def test():
     table = TableDef("flight", [
