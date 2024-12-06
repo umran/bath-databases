@@ -57,7 +57,7 @@ def flight_pilot_assignments(conn: sqlite3.Connection):
         LEFT JOIN pilot p ON fp.pilot_id = p.id
         LEFT JOIN airport origin ON f.origin_id = origin.id
         LEFT JOIN airport destination ON f.destination_id = destination.id
-        WHERE f.id = ?;
+        WHERE f.id = ?
     """
 
     table = TableDef("flight_pilot_assignments", [
