@@ -95,8 +95,3 @@ def adapt_datetime(dt: datetime) -> str:
 # Define converter for string -> datetime
 def convert_datetime(s: bytes) -> datetime:
     return datetime.strptime(s.decode("utf-8"), "%Y-%m-%d %H:%M:%S")
-
-def test():
-    Console().run()
-
-test()
