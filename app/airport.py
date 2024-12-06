@@ -66,9 +66,6 @@ class AirportTable():
                     UPDATE {self.table_def.name} SET {", ".join(update_set)} WHERE id = ?
                 """
 
-                # debugging
-                print(statement)
-
                 values.append(record["id"].inner)
                 conn.execute(statement, values)
                 conn.commit()
